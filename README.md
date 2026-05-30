@@ -1,12 +1,14 @@
-# User-level CA Bundle Setup for Downloading Models and Datasets from Hugging Face
+# User-level CA Bundle Setup for Downloading from Hugging Face
 
 ## Purpose
 
-Set up a user-level CA bundle so `curl`, Python, and Hugging Face tools can download models and datasets from Hugging Face.
+Set up a user-level CA bundle so Hugging Face files can be downloaded without `sudo`.
 
 ---
 
-## 1. Export the certificate chain
+## Step 1: Export the Hugging Face certificate chain
+
+Copy and paste:
 
 ```bash
 echo | openssl s_client \
@@ -15,7 +17,11 @@ echo | openssl s_client \
   -showcerts > hf_certs.txt
 ```
 
-Split the certificates into separate files:
+---
+
+## Step 2: Split the certificate chain into separate files
+
+Copy and paste:
 
 ```bash
 awk '
@@ -25,7 +31,19 @@ awk '
 ' hf_certs.txt
 ```
 
-Inspect each certificate:
+This creates files such as:
+
+```text
+cert-01.pem
+cert-02.pem
+cert-03.pem
+```
+
+---
+
+## Step 3: Print each certificate subject and issuer
+
+Copy and paste:
 
 ```bash
 for f in cert-*.pem; do
@@ -34,7 +52,7 @@ for f in cert-*.pem; do
 done
 ```
 
-Find the root certificate. It usually has the same `subject` and `issuer`.
+Look for the certificate where `subject` and `issuer` are the same.
 
 Example:
 
@@ -43,21 +61,33 @@ subject=DC = edu, DC = vanderbilt, CN = vu root ca sha2
 issuer=DC = edu, DC = vanderbilt, CN = vu root ca sha2
 ```
 
-Assume the root certificate is `cert-03.pem`. Your file number may be different.
+That file is the root CA certificate.
+
+In the example below, we assume the root CA is:
+
+```text
+cert-03.pem
+```
+
+If your root CA is a different file, replace `cert-03.pem` in the next commands with the correct file name.
 
 ---
 
-## 2. Create a personal CA bundle
+## Step 4: Create a user-level CA bundle
+
+Copy and paste:
 
 ```bash
 mkdir -p ~/.certs
 ```
 
+Copy and paste:
+
 ```bash
 cp /etc/ssl/certs/ca-certificates.crt ~/.certs/my-ca-bundle.crt
 ```
 
-Replace `cert-03.pem` with the actual root certificate file from Step 1:
+Copy and paste, replacing `cert-03.pem` if your root CA file is different:
 
 ```bash
 cat cert-03.pem >> ~/.certs/my-ca-bundle.crt
@@ -65,7 +95,9 @@ cat cert-03.pem >> ~/.certs/my-ca-bundle.crt
 
 ---
 
-## 3. Tell tools to use your personal CA bundle
+## Step 5: Set environment variables for the current shell
+
+Copy and paste:
 
 ```bash
 export SSL_CERT_FILE=$HOME/.certs/my-ca-bundle.crt
@@ -74,21 +106,111 @@ export CURL_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt
 export HF_HUB_DISABLE_XET=1
 ```
 
-Test Hugging Face access:
+---
+
+## Step 6: Test with a small Hugging Face file in the current path
+
+Copy and paste:
 
 ```bash
-curl -I https://huggingface.co --connect-timeout 10
+curl -L \
+  --cacert "$HOME/.certs/my-ca-bundle.crt" \
+  -o ./hf_test_config.json \
+  https://huggingface.co/Qwen/Qwen3-4B/resolve/main/config.json
 ```
 
-Expected result:
+Check the downloaded file:
 
-```text
-HTTP/2 200
+```bash
+ls -lh ./hf_test_config.json
 ```
+
+Preview the first few lines:
+
+```bash
+head ./hf_test_config.json
+```
+
+Expected: the file should exist in the current directory and should contain JSON text.
 
 ---
 
-## 4. Make the settings permanent
+## Step 7: Test Hugging Face CLI with a small file in the current path
+
+Copy and paste:
+
+```bash
+hf download Qwen/Qwen3-4B config.json \
+  --local-dir ./hf_cli_test
+```
+
+Check the downloaded file:
+
+```bash
+ls -lh ./hf_cli_test/config.json
+```
+
+Preview it:
+
+```bash
+head ./hf_cli_test/config.json
+```
+
+Expected: `./hf_cli_test/config.json` should exist and contain JSON text.
+
+---
+
+## Step 8: Test Python with a small file in the current path
+
+Copy and paste:
+
+```bash
+cat > ./hf_python_test.py <<'PY'
+import os
+from huggingface_hub import hf_hub_download
+
+CA = os.path.expanduser("~/.certs/my-ca-bundle.crt")
+
+os.environ["SSL_CERT_FILE"] = CA
+os.environ["REQUESTS_CA_BUNDLE"] = CA
+os.environ["CURL_CA_BUNDLE"] = CA
+os.environ["HF_HUB_DISABLE_XET"] = "1"
+
+path = hf_hub_download(
+    repo_id="Qwen/Qwen3-4B",
+    filename="config.json",
+    local_dir="./hf_python_test",
+)
+
+print("Downloaded to:", path)
+PY
+```
+
+Run it:
+
+```bash
+python ./hf_python_test.py
+```
+
+Check the downloaded file:
+
+```bash
+ls -lh ./hf_python_test/config.json
+```
+
+Preview it:
+
+```bash
+head ./hf_python_test/config.json
+```
+
+Expected: `./hf_python_test/config.json` should exist and contain JSON text.
+
+---
+
+## Step 9: Make the settings permanent
+
+Copy and paste:
 
 ```bash
 cat >> ~/.bashrc <<'EOF'
@@ -99,119 +221,49 @@ export HF_HUB_DISABLE_XET=1
 EOF
 ```
 
+Reload the shell configuration:
+
 ```bash
 source ~/.bashrc
 ```
 
----
-
-## 5. Test Hugging Face CLI
-
-Test a small model file:
+Confirm the variables are set:
 
 ```bash
-hf download Qwen/Qwen3-4B config.json \
-  --local-dir Models/Qwen3-4B-test
+echo "$SSL_CERT_FILE"
+echo "$REQUESTS_CA_BUNDLE"
+echo "$CURL_CA_BUNDLE"
+echo "$HF_HUB_DISABLE_XET"
 ```
 
-Expected result:
+Expected:
 
 ```text
-Downloaded
-path: Models/Qwen3-4B-test/config.json
-```
-
-Download a full model:
-
-```bash
-hf download Qwen/Qwen3-4B \
-  --local-dir Models/Qwen3-4B
-```
-
-Download a dataset:
-
-```bash
-hf download HuggingFaceH4/ultrachat_200k \
-  --repo-type dataset \
-  --local-dir Datasets/ultrachat_200k
+/home/YOUR_USERNAME/.certs/my-ca-bundle.crt
+/home/YOUR_USERNAME/.certs/my-ca-bundle.crt
+/home/YOUR_USERNAME/.certs/my-ca-bundle.crt
+1
 ```
 
 ---
 
-## 6. Test Python model download
+## Step 10: Optional cleanup
 
-Create `download_model.py`:
-
-```python
-import os
-from huggingface_hub import snapshot_download
-
-CA = os.path.expanduser("~/.certs/my-ca-bundle.crt")
-
-os.environ["SSL_CERT_FILE"] = CA
-os.environ["REQUESTS_CA_BUNDLE"] = CA
-os.environ["CURL_CA_BUNDLE"] = CA
-os.environ["HF_HUB_DISABLE_XET"] = "1"
-
-snapshot_download(
-    repo_id="Qwen/Qwen3-4B",
-    local_dir="Models/Qwen3-4B",
-    max_workers=1,
-    etag_timeout=60,
-)
-```
-
-Run:
-
-```bash
-python download_model.py
-```
-
----
-
-## 7. Test Python dataset download
-
-Create `download_dataset.py`:
-
-```python
-import os
-from huggingface_hub import snapshot_download
-
-CA = os.path.expanduser("~/.certs/my-ca-bundle.crt")
-
-os.environ["SSL_CERT_FILE"] = CA
-os.environ["REQUESTS_CA_BUNDLE"] = CA
-os.environ["CURL_CA_BUNDLE"] = CA
-os.environ["HF_HUB_DISABLE_XET"] = "1"
-
-snapshot_download(
-    repo_id="HuggingFaceH4/ultrachat_200k",
-    repo_type="dataset",
-    local_dir="Datasets/ultrachat_200k",
-    max_workers=1,
-    etag_timeout=60,
-)
-```
-
-Run:
-
-```bash
-python download_dataset.py
-```
-
----
-
-## 8. Optional cleanup
-
-After everything works, remove temporary certificate files:
+After the tests work, remove temporary certificate extraction files:
 
 ```bash
 rm -f hf_certs.txt cert-*.pem
 ```
 
-Keep this file:
+Optional: remove test downloads and test script:
 
 ```bash
+rm -rf ./hf_test_config.json ./hf_cli_test ./hf_python_test ./hf_python_test.py
+```
+
+Keep this file:
+
+```text
 ~/.certs/my-ca-bundle.crt
 ```
 
@@ -221,6 +273,5 @@ Keep this file:
 
 - This setup does not require `sudo`.
 - Each user can create their own `~/.certs/my-ca-bundle.crt`.
-- Other users can reuse a shared copy only if they have permission to read it.
-- The proper system-wide fix is for an administrator to install the Vanderbilt/VUMC root CA into the server trust store.
+- The file `~/.certs/my-ca-bundle.crt` is the important file to keep.
 - Do not use `curl -k` or disabled SSL verification as a long-term solution.
