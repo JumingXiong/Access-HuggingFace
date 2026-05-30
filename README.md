@@ -113,50 +113,31 @@ export HF_ENDPOINT=https://huggingface.co
 
 ---
 
-## Step 6: Test Python/Hugging Face Hub with a small file in the current path
+## Step 6: Test Hugging Face download with a small file in the current path
 
 Copy and paste:
 
 ```bash
-cat > ./hf_python_test.py <<'PY'
-import os
-from huggingface_hub import hf_hub_download
-
-CA = os.path.expanduser("~/.certs/my-ca-bundle.crt")
-
-os.environ["SSL_CERT_FILE"] = CA
-os.environ["REQUESTS_CA_BUNDLE"] = CA
-os.environ["CURL_CA_BUNDLE"] = CA
-os.environ["HF_HUB_DISABLE_XET"] = "1"
-os.environ["HF_ENDPOINT"] = "https://huggingface.co"
-
-path = hf_hub_download(
-    repo_id="Qwen/Qwen3-4B",
-    filename="config.json",
-    local_dir="./hf_python_test",
-)
-
-print("Downloaded to:", path)
-PY
-```
-
-Run it:
-
-```bash
-python ./hf_python_test.py
+HF_ENDPOINT=https://huggingface.co \
+HF_HUB_DISABLE_XET=1 \
+SSL_CERT_FILE=$HOME/.certs/my-ca-bundle.crt \
+REQUESTS_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt \
+CURL_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt \
+hf download Qwen/Qwen3-4B config.json \
+  --local-dir ./hf_official_test
 ```
 
 Check the downloaded file:
 
 ```bash
-ls -lh ./hf_python_test/config.json
-head ./hf_python_test/config.json
+ls -lh ./hf_official_test/config.json
+head ./hf_official_test/config.json
 ```
 
 Expected result:
 
 ```text
-./hf_python_test/config.json should exist and contain JSON text.
+./hf_official_test/config.json should exist and contain JSON text.
 ```
 
 ---
