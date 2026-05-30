@@ -108,59 +108,7 @@ export HF_HUB_DISABLE_XET=1
 
 ---
 
-## Step 6: Test with a small Hugging Face file in the current path
-
-Copy and paste:
-
-```bash
-curl -L \
-  --cacert "$HOME/.certs/my-ca-bundle.crt" \
-  -o ./hf_test_config.json \
-  https://huggingface.co/Qwen/Qwen3-4B/resolve/main/config.json
-```
-
-Check the downloaded file:
-
-```bash
-ls -lh ./hf_test_config.json
-```
-
-Preview the first few lines:
-
-```bash
-head ./hf_test_config.json
-```
-
-Expected: the file should exist in the current directory and should contain JSON text.
-
----
-
-## Step 7: Test Hugging Face CLI with a small file in the current path
-
-Copy and paste:
-
-```bash
-hf download Qwen/Qwen3-4B config.json \
-  --local-dir ./hf_cli_test
-```
-
-Check the downloaded file:
-
-```bash
-ls -lh ./hf_cli_test/config.json
-```
-
-Preview it:
-
-```bash
-head ./hf_cli_test/config.json
-```
-
-Expected: `./hf_cli_test/config.json` should exist and contain JSON text.
-
----
-
-## Step 8: Test Python with a small file in the current path
+## Step 6: Test Python/Hugging Face Hub with a small file in the current path
 
 Copy and paste:
 
@@ -196,19 +144,17 @@ Check the downloaded file:
 
 ```bash
 ls -lh ./hf_python_test/config.json
-```
-
-Preview it:
-
-```bash
 head ./hf_python_test/config.json
 ```
 
-Expected: `./hf_python_test/config.json` should exist and contain JSON text.
+Expected result:
 
+```text
+./hf_python_test/config.json should exist and contain JSON text.
+```
 ---
 
-## Step 9: Make the settings permanent
+## Step 7: Make the settings permanent
 
 Copy and paste:
 
@@ -247,7 +193,7 @@ Expected:
 
 ---
 
-## Step 10: Optional cleanup
+## Step 8: Optional cleanup
 
 After the tests work, remove temporary certificate extraction files:
 
