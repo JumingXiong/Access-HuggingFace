@@ -63,13 +63,15 @@ issuer=DC = edu, DC = vanderbilt, CN = vu root ca sha2
 
 That file is the root CA certificate.
 
-In the example below, we assume the root CA is:
+In this example, the root CA file is:
 
 ```text
 cert-03.pem
 ```
 
-If your root CA is a different file, replace `cert-03.pem` in the next commands with the correct file name.
+Your file number may be different.
+
+Do not use the website certificate, such as `cert-01.pem`. Use the root CA certificate.
 
 ---
 
@@ -104,7 +106,10 @@ export SSL_CERT_FILE=$HOME/.certs/my-ca-bundle.crt
 export REQUESTS_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt
 export CURL_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt
 export HF_HUB_DISABLE_XET=1
+export HF_ENDPOINT=https://huggingface.co
 ```
+
+`HF_ENDPOINT=https://huggingface.co` forces Hugging Face tools to use the official Hugging Face endpoint instead of a mirror such as `hf-mirror.com`.
 
 ---
 
@@ -123,6 +128,7 @@ os.environ["SSL_CERT_FILE"] = CA
 os.environ["REQUESTS_CA_BUNDLE"] = CA
 os.environ["CURL_CA_BUNDLE"] = CA
 os.environ["HF_HUB_DISABLE_XET"] = "1"
+os.environ["HF_ENDPOINT"] = "https://huggingface.co"
 
 path = hf_hub_download(
     repo_id="Qwen/Qwen3-4B",
@@ -152,24 +158,27 @@ Expected result:
 ```text
 ./hf_python_test/config.json should exist and contain JSON text.
 ```
+
 ---
 
-## Step 7: Make the settings permanent
+## Step 7: Make the settings permanent for future use
 
 Copy and paste:
 
 ```bash
+perl -0pi -e 's/\n# Hugging Face CA bundle setup.*?# End Hugging Face CA bundle setup\n//s' ~/.bashrc
+
 cat >> ~/.bashrc <<'EOF'
+
+# Hugging Face CA bundle setup
 export SSL_CERT_FILE=$HOME/.certs/my-ca-bundle.crt
 export REQUESTS_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt
 export CURL_CA_BUNDLE=$HOME/.certs/my-ca-bundle.crt
 export HF_HUB_DISABLE_XET=1
+export HF_ENDPOINT=https://huggingface.co
+# End Hugging Face CA bundle setup
 EOF
-```
 
-Reload the shell configuration:
-
-```bash
 source ~/.bashrc
 ```
 
@@ -180,6 +189,7 @@ echo "$SSL_CERT_FILE"
 echo "$REQUESTS_CA_BUNDLE"
 echo "$CURL_CA_BUNDLE"
 echo "$HF_HUB_DISABLE_XET"
+echo "$HF_ENDPOINT"
 ```
 
 Expected:
@@ -189,22 +199,23 @@ Expected:
 /home/YOUR_USERNAME/.certs/my-ca-bundle.crt
 /home/YOUR_USERNAME/.certs/my-ca-bundle.crt
 1
+https://huggingface.co
 ```
 
 ---
 
 ## Step 8: Optional cleanup
 
-After the tests work, remove temporary certificate extraction files:
+After the test works, remove temporary certificate extraction files:
 
 ```bash
 rm -f hf_certs.txt cert-*.pem
 ```
 
-Optional: remove test downloads and test script:
+Optional: remove test downloads and the test script:
 
 ```bash
-rm -rf ./hf_test_config.json ./hf_cli_test ./hf_python_test ./hf_python_test.py
+rm -rf ./hf_python_test ./hf_python_test.py
 ```
 
 Keep this file:
@@ -217,7 +228,9 @@ Keep this file:
 
 ## Notes
 
-- This setup does not require `sudo`.
-- Each user can create their own `~/.certs/my-ca-bundle.crt`.
-- The file `~/.certs/my-ca-bundle.crt` is the important file to keep.
-- Do not use `curl -k` or disabled SSL verification as a long-term solution.
+* This setup does not require `sudo`.
+* Each user can create their own `~/.certs/my-ca-bundle.crt`.
+* The file `~/.certs/my-ca-bundle.crt` is the important file to keep.
+* `HF_ENDPOINT=https://huggingface.co` avoids accidentally using `hf-mirror.com`.
+* `HF_HUB_DISABLE_XET=1` can help avoid Xet-related download issues on enterprise networks.
+* Do not use `curl -k` or disabled SSL verification as a long-term solution.
