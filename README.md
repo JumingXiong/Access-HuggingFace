@@ -193,10 +193,10 @@ After the test works, remove temporary certificate extraction files:
 rm -f hf_certs.txt cert-*.pem
 ```
 
-Optional: remove test downloads and the test script:
+Optional: remove the small Hugging Face test download:
 
 ```bash
-rm -rf ./hf_python_test ./hf_python_test.py
+rm -rf ./hf_official_test
 ```
 
 Keep this file:
@@ -204,6 +204,8 @@ Keep this file:
 ```text
 ~/.certs/my-ca-bundle.crt
 ```
+
+Do not delete `~/.certs/my-ca-bundle.crt`; it is the user-level CA bundle used for future Hugging Face downloads.
 
 ---
 
